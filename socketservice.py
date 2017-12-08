@@ -14,9 +14,10 @@ import syslog
 # get app name and server from query string
 name = "weather station socket service"
 server = "weather-sound.herokuapp.com"
+port = 443
 
 # configure the spacebrew client
-brew = Spacebrew(name=name, server=server)
+brew = Spacebrew(name=name, server=server, port=port)
 brew.addPublisher("loop counter", "range")
 # brew.addSubscriber("remote state", "boolean")
 
