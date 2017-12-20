@@ -11,4 +11,5 @@ You will need to install the required python packages yourself if they are not a
 Place the repository in **weewx/bin/user/**
 
 Change **weewx.conf** by adding the bold part to the following line:
-`report_services = **user.weewx-websocket-service.socketservice.SocketService**, weewx.engine.StdPrint, weewx.engine.StdReport`
+
+`report_services = `**`user.weewx-websocket-service.socketservice.SocketService`**`, weewx.engine.StdPrint, weewx.engine.StdReport`
