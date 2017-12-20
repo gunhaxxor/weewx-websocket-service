@@ -2,10 +2,11 @@ import weewx
 from weewx.engine import StdService
 import websocket
 import threading
-import time
 import json
 import os
 from dotenv import load_dotenv, find_dotenv
+
+#inject variables from .env-file
 load_dotenv(find_dotenv())
 
 
@@ -15,10 +16,15 @@ import locale
 # http://docs.python.org/2/library/locale.html#locale.setlocale
 locale.setlocale(locale.LC_ALL, '')
 
-import syslog
-#from weeutil.weeutil import timestamp_to_string, option_as_list
 
-clientToken = os.environ.get('WEATHERSTATIONTOKEN')
+# We need some environment variables to set the right properties of the websocket connection
+# You can set them by using an .env-file. I'm making use of the dotenv package to inject them into the service
+
+# clienttoken sets a tokenstring as a part of the initial connection request.
+# server is websocket server. Either 'wss://blabla' for encrypted or 'ws://blabla' for unencrypted
+# port is a port. Remember that some port ranges not are allowed in some environments (like chrome for example)
+# These variables are used like this 'server:port?token=clientToken' when the service tries to create a websocket connection
+clientToken = os.environ.get('WEATHERSTATIONTOKEN') 
 server = os.environ.get('SERVER')
 port = os.environ.get('PORT')
 
@@ -32,31 +38,14 @@ class SocketService(StdService):
         
         
         try:
-            # self.spacebrewStarted = True
-            self.loopCounter = 0
             self.latestData = None
             self.ws = None
             self.started = False
 
-            # # Dig the needed options out of the configuration dictionary.
-            # # If a critical option is missing, an exception will be raised and
-            # # the alarm will not be set.
-            # self.expression    = config_dict['Alarm']['expression']
-            # self.time_wait     = int(config_dict['Alarm'].get('time_wait', 3600))
-            # self.smtp_host     = config_dict['Alarm']['smtp_host']
-            # self.smtp_user     = config_dict['Alarm'].get('smtp_user')
-            # self.smtp_password = config_dict['Alarm'].get('smtp_password')
-            # self.SUBJECT       = config_dict['Alarm'].get('subject', "Alarm message from weeWX")
-            # self.FROM          = config_dict['Alarm'].get('from', 'alarm@example.com')
-            # self.TO            = option_as_list(config_dict['Alarm']['mailto'])
-            # syslog.syslog(syslog.LOG_INFO, "alarm: Alarm set for expression: '%s'" % self.expression)
-            
-            # If we got this far, it's ok to start intercepting events:
             self.bind(weewx.STARTUP, self.startup)
-            self.bind(weewx.NEW_ARCHIVE_RECORD, self.newArchiveRecord)    # NOTE 1
             self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
-        except KeyError, e:
-            syslog.syslog(syslog.LOG_INFO, "Socket service not initialized.  Missing parameter: %s" % e)
+        except:
+            print "failed to initialize the websocket service"
     
     def create_socket_thread(self):
         def run(*args):
@@ -67,8 +56,6 @@ class SocketService(StdService):
             self.thread.start()
             self.started = True
         except:
-            # self.spacebrewStarted = False
-            syslog.syslog(syslog.LOG_INFO, "socket service failed to setup socket connection")
             print "Couldn't connect for some reason"
 
     def run(self):
@@ -95,21 +82,9 @@ class SocketService(StdService):
     
     def new_loop_packet(self, event):
         """Gets called on a new loop packet event."""
-        self.loopCounter += 1
-        self.loopCounter %= 1023
 
         self.latestData = json.dumps(event.packet)
 
-        # if not self.spacebrewStarted:
-        #     try:
-        #         brew.addPublisher("loop counter", "range")
-        #         brew.start()
-        #         self.spacebrewStarted = True
-        #     except:
-        #         self.spacebrewStarted = False
-        #         syslog.syslog(syslog.LOG_INFO, "SpacebrewSocket (service) failed to setup socket connection")
-        #         print "Couldn't connect spacebrew for some reason"
-        #         return
         if self.ws is None:
             self.thread.join()
             self.create_socket_thread()
@@ -121,9 +96,9 @@ class SocketService(StdService):
         except:
             pass
 
-    def newArchiveRecord(self, event):
-        """Gets called on a new archive record event."""
-        print "archive!!!!!!"
+    # def newArchiveRecord(self, event):
+    #     """Gets called on a new archive record event."""
+    #     print "archive!"
 
     
     def on_message(self, ws, message):
@@ -133,7 +108,7 @@ class SocketService(StdService):
         print(error)
 
     def on_close(self, ws):
-        print("### closed ###")
+        print("### websocket closed ###")
 
     def on_open(self, ws):
-        print('### opened ###')
+        print('### websocket opened ###')
