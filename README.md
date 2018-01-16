@@ -6,7 +6,7 @@ You will need to install the required python packages yourself if they are not a
 - websocket (`>pip install websocket-client`)
 - threading
 - json
-- dotenv
+- dotenv (`>pip install python-dotenv`)
 
 Place the repository in **weewx/bin/user/**
 
